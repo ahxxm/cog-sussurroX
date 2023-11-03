@@ -20,9 +20,6 @@ class Predictor(BasePredictor):
         self.model = whisperx.load_model(
             "large-v2", self.device, compute_type=compute_type
         )
-        self.alignment_model, self.metadata = whisperx.load_align_model(
-            language_code="en", device=self.device
-        )
 
     def predict(
         self,
@@ -51,11 +48,14 @@ class Predictor(BasePredictor):
             # result is dict w/keys ['segments', 'language']
             # segments is a list of dicts,each dict has {'text': <text>, 'start': <start_time_msec>, 'end': <end_time_msec> }
             if align_output:
+                alignment_model, metadata = whisperx.load_align_model(
+                    language_code=result["language"], device=self.device
+                )
                 # NOTE - the "only_text" flag makes no sense with this flag, but we'll do it anyway
                 result = whisperx.align(
                     result["segments"],
-                    self.alignment_model,
-                    self.metadata,
+                    alignment_model,
+                    metadata,
                     str(audio),
                     self.device,
                     return_char_alignments=False,
