@@ -25,10 +25,14 @@ class Predictor(BasePredictor):
         self,
         audio: Path = Input(description="Audio file"),
         batch_size: int = Input(
-            description="Parallelization of input audio transcription", default=32
+            description="Parallelization of input audio transcription",
+            ge=1,
+            default=32,
         ),
         chunk_size: int = Input(
-            description="Chunk size for merging VAD sements", default=30
+            description="Chunk size for merging VAD sements",
+            ge=1,
+            default=30,
         ),
         language: str = Input(description="Language code", default=None),
         align_output: bool = Input(
