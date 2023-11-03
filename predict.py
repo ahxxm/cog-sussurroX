@@ -4,13 +4,20 @@ import os
 
 os.environ["HF_HOME"] = "/src/hf_models"
 os.environ["TORCH_HOME"] = "/src/torch_models"
-from cog import BasePredictor, Input, Path
+from cog import BasePredictor, Input, Path, BaseModel
 import torch
 import whisperx
-import json
+from typing import Any
 
 
 compute_type = "float16"
+
+
+class ModelOutput(BaseModel):
+    detected_language: str
+    transcription: str
+    segments: Any
+    word_segments: Any
 
 
 class Predictor(BasePredictor):
@@ -39,12 +46,8 @@ class Predictor(BasePredictor):
             description="Use if you need word-level timing and not just batched transcription",
             default=False,
         ),
-        only_text: bool = Input(
-            description="Set if you only want to return text; otherwise, segment metadata will be returned as well.",
-            default=False,
-        ),
         debug: bool = Input(description="Print out debug information.", default=False),
-    ) -> str:
+    ) -> ModelOutput:
         """Run a single prediction on the model"""
         with torch.inference_mode():
             result = self.model.transcribe(
@@ -56,12 +59,12 @@ class Predictor(BasePredictor):
             )
             # result is dict w/keys ['segments', 'language']
             # segments is a list of dicts,each dict has {'text': <text>, 'start': <start_time_msec>, 'end': <end_time_msec> }
+            transcription = "".join([segment["text"] for segment in result["segments"]])
             if align_output:
                 alignment_model, metadata = whisperx.load_align_model(
                     language_code=result["language"], device=self.device
                 )
-                # NOTE - the "only_text" flag makes no sense with this flag, but we'll do it anyway
-                result = whisperx.align(
+                aligned_result = whisperx.align(
                     result["segments"],
                     alignment_model,
                     metadata,
@@ -69,15 +72,18 @@ class Predictor(BasePredictor):
                     self.device,
                     return_char_alignments=False,
                 )
-                # dict w/keys ['segments', 'word_segments']
+                result.update(aligned_result)
                 # aligned_result['word_segments'] = list[dict], each dict contains {'word': <word>, 'start': <start_time_msec>, 'end': <end_time_msec>, 'score': probability}
                 #   it is also sorted
                 # aligned_result['segments'] - same as result segments, but w/a ['words'] segment which contains timing information above.
                 # return_char_alignments adds in character level alignments. it is: too many.
-            if only_text:
-                return "".join([val.text for val in result["segments"]])
             if debug:
                 print(
                     f"max gpu memory allocated over runtime: {torch.cuda.max_memory_reserved() / (1024 ** 3):.2f} GB"
                 )
-        return json.dumps(result["segments"])
+        return ModelOutput(
+            transcription=transcription,
+            segments=result["segments"],
+            word_segments=result.get("word_segments"),
+            detected_language=result["language"],
+        )
