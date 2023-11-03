@@ -27,6 +27,9 @@ class Predictor(BasePredictor):
         batch_size: int = Input(
             description="Parallelization of input audio transcription", default=32
         ),
+        chunk_size: int = Input(
+            description="Chunk size for merging VAD sements", default=30
+        ),
         language: str = Input(description="Language code", default="en"),
         align_output: bool = Input(
             description="Use if you need word-level timing and not just batched transcription",
@@ -43,7 +46,10 @@ class Predictor(BasePredictor):
         """Run a single prediction on the model"""
         with torch.inference_mode():
             result = self.model.transcribe(
-                str(audio), batch_size=batch_size, language=language
+                str(audio),
+                batch_size=batch_size,
+                chunk_size=chunk_size,
+                language=language,
             )
             # result is dict w/keys ['segments', 'language']
             # segments is a list of dicts,each dict has {'text': <text>, 'start': <start_time_msec>, 'end': <end_time_msec> }
