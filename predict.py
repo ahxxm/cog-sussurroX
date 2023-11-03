@@ -30,7 +30,7 @@ class Predictor(BasePredictor):
         chunk_size: int = Input(
             description="Chunk size for merging VAD sements", default=30
         ),
-        language: str = Input(description="Language code", default="en"),
+        language: str = Input(description="Language code", default=None),
         align_output: bool = Input(
             description="Use if you need word-level timing and not just batched transcription",
             default=False,
