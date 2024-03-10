@@ -75,7 +75,7 @@ class Predictor(BasePredictor):
                 print(
                     f"max gpu memory allocated over runtime: {torch.cuda.max_memory_reserved() / (1024 ** 3):.2f} GB"
                 )
-        return ModelOutput(
+        return Output(
             transcription=transcription,
             segments=result["segments"],
             word_segments=result.get("word_segments"),
