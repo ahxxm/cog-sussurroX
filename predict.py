@@ -13,7 +13,7 @@ from typing import Any
 compute_type = "float16"
 
 
-class ModelOutput(BaseModel):
+class Output(BaseModel):
     detected_language: str
     transcription: str
     segments: Any
@@ -47,7 +47,7 @@ class Predictor(BasePredictor):
             default=False,
         ),
         debug: bool = Input(description="Print out debug information.", default=False),
-    ) -> ModelOutput:
+    ) -> Output:
         """Run a single prediction on the model"""
         with torch.inference_mode():
             result = self.model.transcribe(
